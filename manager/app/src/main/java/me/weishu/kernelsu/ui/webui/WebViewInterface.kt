@@ -1,12 +1,17 @@
 package me.weishu.kernelsu.ui.webui
 
 import android.app.Activity
+import android.os.Environment
+import android.util.Base64
+import android.util.Log
 import android.content.pm.ApplicationInfo
 import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
 import android.view.Window
+import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
+import android.webkit.WebSettings
 import android.widget.Toast
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.core.view.WindowInsetsCompat
@@ -14,14 +19,26 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.ShellUtils
 import com.topjohnwu.superuser.internal.UiThreadHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import me.weishu.kernelsu.R
+import me.weishu.kernelsu.ksuApp
+import me.weishu.kernelsu.ui.util.DownloadCompletionAction
+import me.weishu.kernelsu.ui.util.DownloadManager
 import me.weishu.kernelsu.ui.util.createRootShell
 import me.weishu.kernelsu.ui.util.listModules
 import me.weishu.kernelsu.ui.util.withNewRootShell
 import me.weishu.kernelsu.ui.viewmodel.SuperUserViewModel
 import me.weishu.kernelsu.ui.webui.file.KsuIO
+import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.ByteArrayInputStream
 import java.io.File
+import java.io.IOException
 import java.util.concurrent.CompletableFuture
 
 class WebViewInterface(private val state: WebUIState) {
@@ -265,6 +282,67 @@ class WebViewInterface(private val state: WebUIState) {
 
     fun destroy() {
         KsuIO.destroy()
+    }
+}
+
+class WebUIDownloadInterface(private val state: WebUIState) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val webView get() = state.webView
+
+    @JavascriptInterface
+    fun download(url: String, fileName: String?, mimeType: String?) {
+        val currentWebView = webView ?: return
+        val target = resolveDownloadTarget(fileName)
+        val cookie = CookieManager.getInstance().getCookie(url)
+        val userAgent = currentWebView.settings.userAgentString
+            ?: WebSettings.getDefaultUserAgent(currentWebView.context)
+        DownloadManager.enqueue(
+            context = currentWebView.context,
+            url = url,
+            fileName = target.name,
+            targetPath = target.absolutePath,
+            mimeType = mimeType,
+            cookie = cookie,
+            userAgent = userAgent,
+            completionAction = DownloadCompletionAction.OPEN_FILE,
+        )
+    }
+
+    @JavascriptInterface
+    fun save(base64: String, fileName: String?) {
+        val currentWebView = webView ?: return
+        val target = resolveDownloadTarget(fileName)
+
+        postToast(currentWebView.context.getString(R.string.download_progress_title, target.name))
+
+        scope.launch {
+            runCatching {
+                val decoded = Base64.decode(base64, Base64.DEFAULT)
+                ByteArrayInputStream(decoded).use { input ->
+                    writeWebUIDownload(target, input)
+                }
+            }.onSuccess {
+                postToast(currentWebView.context.getString(R.string.download_complete_content, target.name))
+            }.onFailure { throwable ->
+                Log.e("WebUIDownload", "Failed to save ${target.absolutePath}", throwable)
+                postToast(currentWebView.context.getString(R.string.download_failed_content, target.name))
+            }
+        }
+    }
+
+    fun destroy() {
+        scope.cancel()
+    }
+
+    private fun postToast(message: String) {
+        webView?.post {
+            webView?.let { Toast.makeText(it.context, message, Toast.LENGTH_SHORT).show() }
+        }
+    }
+
+    private fun resolveDownloadTarget(fileName: String?): File {
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        return resolveWebUIDownloadFile(downloadsDir, fileName)
     }
 }
 

@@ -267,6 +267,7 @@
     <string name="download">Download</string>
     <string name="download_cancel">Cancel</string>
     <string name="download_install">Install</string>
+    <string name="webui_download_too_large">Download is too large for direct WebUI save.</string>
     <string name="settings_adb_root" translatable="false">ADB Root</string>
     <string name="settings_adb_root_summary">Run adbd daemon with root privileges</string>
 </resources>

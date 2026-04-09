@@ -58,21 +58,21 @@ Có một số phương pháp cài đặt KernelSU, mỗi phương pháp phù h�
 3. Cài đặt thông qua fastboot bằng boot.img do KernelSU cung cấp
 4. Sửa boot.img theo cách thủ công và cài đặt nó
 
-Since version [0.9.0](https://github.com/tiann/KernelSU/releases/tag/v0.9.0), KernelSU supports two running modes on GKI devices:
+Kể từ phiên bản [0.9.0](https://github.com/tiann/KernelSU/releases/tag/v0.9.0), KernelSU hỗ trợ 2 chế độ chạy trên các thiết bị GKI:
 
-1. `GKI`: Replace the original kernel of the device with the **Generic Kernel Image** (GKI) provided by KernelSU.
-2. `LKM`: Load the **Loadable Kernel Module** (LKM) into the device kernel without replacing the original kernel.
+1. `GKI`: Thay thế kernel gốc của thiết bị với **Generic Kernel Image** (GKI) được cung cấp bởi KernelSU.
+2. `LKM`: Cài đặt **Loadable Kernel Module** (LKM) vào kernel của thiết bị mà không thay đổi kernel gốc.
 
 These two modes are suitable for different scenarios, and you can choose the one according to your needs.
 
-### GKI mode {#gki-mode}
+### Chế độ GKI {#gki-mode}
 
-In GKI mode, the original kernel of the device will be replaced with the generic kernel image provided by KernelSU. The advantages of GKI mode are:
+Trong chế độ GKI, kernel gốc của thiết bị sẽ được thay thế với image kernel được cung cấp bởi KernelSU. Các lợi thế của chế độ GKI là:
 
-1. Strong universality, suitable for most devices. For example, Samsung has enabled KNOX devices, and LKM mode cannot work. There are also some niche modified devices that can only use GKI mode.
-2. Can be used without relying on official firmware, and there is no need to wait for official firmware updates, as long as the KMI is consistent, it can be used.
+1. Độ linh hoạt cao, phù hợp cho hầu hết thiết bị. Ví dụ, Samsung có những thiết bị với KNOX được bật, và chế độ LKM không thể hoạt động. Ngoài ra còn có một số thiết bị đã được chỉnh sửa và chỉ có thể dùng chế độ GKI
+2. Có thể được sử dụng mà không cần dựa vào phần mềm gốc, và không cần đợi các bản cập nhật phần mềm chính thức, miễn là KMI không mâu thuẫn, nó có thể được sử dụng 
 
-### LKM mode {#lkm-mode}
+### Chế độ LKM {#lkm-mode}
 
 In LKM mode, the original kernel of the device won't be replaced, but the loadable kernel module will be loaded into the device kernel. The advantages of LKM mode are:
 
